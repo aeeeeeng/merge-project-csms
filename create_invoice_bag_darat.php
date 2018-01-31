@@ -1,37 +1,27 @@
-<? 
+<?
 session_start();
 include ('../include/ex_fungsi.php');
-include ('../include/validasi.php'); 
+include ('../include/validasi.php');
 $fungsi=new ex_fungsi();
 $conn=$fungsi->ex_koneksi();
 
 $halaman_id=170;
-$user_id=$_SESSION['user_id']; 
+$user_id=$_SESSION['user_id'];
 $user_org=$_SESSION['user_org'];
 $show_ket='';
 
 if ($fungsi->keamanan($halaman_id,$user_id)==0) {
 ?>
 				<SCRIPT LANGUAGE="JavaScript">
-				
+
 					alert("Anda tidak berhak meng akses halaman ini.... \n Login Dahulu...");
-			
+
 				</SCRIPT>
 	 <a href="../index.php">Login....</a>
 <?
 exit();
 }
 
-// Script Automatically approve SPJ distributor when > 2day
-$sql2 = "INSERT INTO EX_TRANS_SCHEDULE_DISTAPPROV SELECT DISTINCT NO_SHP_TRN,LAST_UPDATE_DATE,SYSDATE FROM (SELECT NO_SHP_TRN,LAST_UPDATE_DATE,CASE WHEN TO_CHAR(LAST_UPDATE_DATE,'D')=6 THEN LAST_UPDATE_DATE+INTERVAL '4' DAY WHEN TO_CHAR(LAST_UPDATE_DATE,'D')=7 THEN LAST_UPDATE_DATE+INTERVAL '3' DAY ELSE LAST_UPDATE_DATE+INTERVAL '2' DAY END AS TANGGAL_EXEC FROM EX_TRANS_HDR WHERE ISAPPROVEDIST=0 AND STATUS='OPEN' AND STATUS2='OPEN') A WHERE SYSDATE>TANGGAL_EXEC";
-$stid = oci_parse($conn, $sql2);
-oci_execute($stid);
-
-$sql2 = "UPDATE EX_TRANS_HDR SET ISAPPROVEDIST=1 WHERE NO_SHP_TRN IN (SELECT DISTINCT NO_SHP_TRN FROM (SELECT NO_SHP_TRN,LAST_UPDATE_DATE,CASE WHEN TO_CHAR(LAST_UPDATE_DATE,'D')=6 THEN LAST_UPDATE_DATE+INTERVAL '4' DAY WHEN TO_CHAR(LAST_UPDATE_DATE,'D')=7 THEN LAST_UPDATE_DATE+INTERVAL '3' DAY ELSE LAST_UPDATE_DATE+INTERVAL '2' DAY END AS TANGGAL_EXEC FROM EX_TRANS_HDR WHERE ISAPPROVEDIST=0 AND STATUS='OPEN' AND STATUS2='OPEN' ) A WHERE SYSDATE>TANGGAL_EXEC) ";
-$stid = oci_parse($conn, $sql2);
-oci_execute($stid);
-// End Script
- 
 
 $page="create_invoice_bag_darat.php";
 
@@ -61,7 +51,7 @@ if(isset($_POST['cari'])){
   	$bulan = $_POST['bulan'];
 	$tgl_tremin=$bulan.$tahun;
         $termin = $_POST['termin'];
-        
+
         $mp_coics=$fungsi->getComin($conn,$user_org);
         if(count($mp_coics)>0){
             unset($inorg);$orgcounter=0;
@@ -69,11 +59,11 @@ if(isset($_POST['cari'])){
                   $inorg .="'".$keyOrg."',";
                   $orgcounter++;
             }
-            $orgIn= rtrim($inorg, ',');        
+            $orgIn= rtrim($inorg, ',');
         }else{
            $orgIn= $user_org;
         }
-    
+
 	$jumHari = cal_days_in_month(CAL_GREGORIAN, $bulan, $tahun);
         //echo "Tahun : ".$id_tahun." : ".$jumHari;
 
@@ -103,10 +93,10 @@ if(isset($_POST['cari'])){
 		$tanggal_selesai_sql=$jumHari.'-'.$bulan.'-'.$tahun;
     }
 	if($plant=="" and $no_shipment=="" and $distributor=="" and $vendor=="" and $tipe_transaksi == "" and $tahun == "" and $bulan == "" and $warna_plat == ""){
-		$sql= "SELECT * FROM EX_PAJAK_HDR_V3 WHERE ISAPPROVEDIST=1 AND TANGGAL_KIRIM BETWEEN TO_Date('$tanggal_mulai_sql', 'DD-MM-YYYY') AND TO_Date('$tanggal_selesai_sql', 'DD-MM-YYYY') AND DELETE_MARK = '0' AND ORG in ($orgIn) AND STATUS = 'OPEN' AND STATUS2 = 'OPEN' AND VEHICLE_TYPE<>'205' AND KELOMPOK_TRANSAKSI = 'DARAT' AND TIPE_TRANSAKSI = 'BAG' AND STATUS_PAJAK = 'OK' ORDER BY ORG,NAMA_VENDOR,NO_SHP_TRN ASC";
+		$sql= "SELECT * FROM EX_PAJAK_HDR_V WHERE  TANGGAL_KIRIM BETWEEN TO_Date('$tanggal_mulai_sql', 'DD-MM-YYYY') AND TO_Date('$tanggal_selesai_sql', 'DD-MM-YYYY') AND DELETE_MARK = '0' AND ORG in ($orgIn) AND STATUS = 'OPEN' AND STATUS2 = 'OPEN' AND VEHICLE_TYPE<>'205' AND KELOMPOK_TRANSAKSI = 'DARAT' AND TIPE_TRANSAKSI = 'BAG' AND STATUS_PAJAK = 'OK' ORDER BY ORG,NAMA_VENDOR,NO_SHP_TRN ASC";
 	}else {
 		$pakeor=0;
-		$sql= "SELECT * FROM EX_PAJAK_HDR_V3 WHERE ISAPPROVEDIST=1 AND  ";
+		$sql= "SELECT *FROM EX_PAJAK_HDR_V WHERE ";
 		if($no_shipment!=""){
 		$sql.=" NO_SHP_TRN LIKE '$no_shipment' ";
 		$pakeor=1;
@@ -184,30 +174,30 @@ if(isset($_POST['cari'])){
 		}
 		$sql.=" AND DELETE_MARK = '0' AND ORG in ($orgIn) AND STATUS = 'OPEN' AND STATUS2 = 'OPEN' AND VEHICLE_TYPE<>'205' AND KELOMPOK_TRANSAKSI = 'DARAT' AND TIPE_TRANSAKSI = 'BAG' AND STATUS_PAJAK = 'OK' ORDER BY ORG,VENDOR, SAL_DISTRIK, NO_SHP_TRN ASC";
 	}
-	
-	//echo $sql;
+
+//	echo $sql;
 	$query= oci_parse($conn, $sql);
 	oci_execute($query);
 
 	while($row=oci_fetch_array($query)){
-        $com[]=$row[ORG];
+                $com[]=$row[ORG];
 		$no_shipment_v[]=$row[NO_SHP_TRN];
 		$tgl_kirim_v[]=$row[TANGGAL_KIRIM];
 		$produk_v[]=$row[NAMA_PRODUK];
-		$plant_v[]=$row[PLANT]; 
+		$plant_v[]=$row[PLANT];
 		$no_pol_v[]=$row[NO_POL];
-		$sal_distrik_v[]=$row[SAL_DISTRIK]; 
+		$sal_distrik_v[]=$row[SAL_DISTRIK];
 		$sold_to_v[]=$row[SOLD_TO];
 		$nama_sold_to_v[]=$row[NAMA_SOLD_TO];
 		$qty_v[]=$row[QTY_SHP];
 		$qty_kantong_rusak_v[]=$row[QTY_KTG_RUSAK];
 		$qty_semen_rusak_v[]=$row[QTY_SEMEN_RUSAK];
-		$id_v[]=$row[ID];  
-		$tarif_cost_v[]=$row[TARIF_COST];  
-		$shp_cost_v[]=$row[SHP_COST];  
-		$no_vendor_v=$row[VENDOR];  
-		$nama_vendor_v=$row[NAMA_VENDOR];  
-		$spt_cek=$row[SPT_PAJAK];  
+		$id_v[]=$row[ID];
+		$tarif_cost_v[]=$row[TARIF_COST];
+		$shp_cost_v[]=$row[SHP_COST];
+		$no_vendor_v=$row[VENDOR];
+		$nama_vendor_v=$row[NAMA_VENDOR];
+		$spt_cek=$row[SPT_PAJAK];
 
 	#ECHO'<BR>'.	$sqlok="select * from EX_INVOICE WHERE NO_VENDOR='".$row[VENDOR]."'";
 				$sqlok="select tgl_termin, termin from EX_INVOICE WHERE NO_VENDOR='".$row[VENDOR]."' and tgl_termin='".$tgl_tremin."' and termin is not null group by tgl_termin, termin";
@@ -223,7 +213,7 @@ if(isset($_POST['cari'])){
 
 				//print_r($arr_termin);
 	}
-	
+
 	$lanjut = false;
 	if (@array_key_exists($termin, $arr_termin)) {
 		$lanjut = true;
@@ -235,28 +225,28 @@ if(isset($_POST['cari'])){
 	  exit();
 	}
 	$total=count($no_shipment_v);
-	if ($total < 1)$komen = "Tidak Ada Data Yang Ditemukan";	           
+	if ($total < 1)$komen = "Tidak Ada Data Yang Ditemukan";
 
-}else if(isset($_POST['action'])){               
-    
-        $no_pajak_vendor_cek=trim($_POST['pjk2']).trim($_POST['pjk3']).trim($_POST['pjk4']); 
+}else if(isset($_POST['action'])){
+
+        $no_pajak_vendor_cek=trim($_POST['pjk2']).trim($_POST['pjk3']).trim($_POST['pjk4']);
         $tanggal_pjkceke=trim($_POST['tanggal_pjk']);
         $kepalapjak=trim($_POST['pjk1']);
         $cektahun=trim($_POST['tahun']);
-        
+
         if($no_pajak_vendor_cek!='' && $tanggal_pjkceke!=''){
             //$no_pajak_vendor_cek."<br>";
-            
+
             //parameter tanggal
             $pecah2 = explode("-", $_POST['tanggal_pjk']);
             $date2 = $pecah2[0];
             $month2 = $pecah2[1];
             $year2 = $pecah2[2];
             $fromat2=$year2.$month2.$date2;
-        
+
             if($fromat2>='20130401'){
                      //Koneksi SAP
-                     //$link_koneksi_sap = "/opt/lampp/htdocs/sgg/include/connect/sap_sd_210.php"; 
+                     //$link_koneksi_sap = "/opt/lampp/htdocs/sgg/include/connect/sap_sd_210.php";
                      $sap = new SAPConnection();
                      $sap->Connect("../include/sapclasses/logon_data.conf");
                      //$sap->Connect($link_koneksi_sap);
@@ -264,33 +254,33 @@ if(isset($_POST['cari'])){
                         if ($sap->GetStatus() != SAPRFC_OK ) {
                         echo $sap->PrintStatus();
                         exit;
-                     }	            
+                     }
                     $fce = &$sap->NewFunction ("ZAPPSD_DISPLAYFAKTUR");
                     if ($fce == false ) {
                        $sap->PrintStatus();
                        exit;
                     }
-                    $org_fpajakac=trim($_POST['org_fpajak']);                    
+                    $org_fpajakac=trim($_POST['org_fpajak']);
                     if($org_fpajakac!=''){
                         $orgIn4st = $org_fpajakac;
                     }else{
                         $orgIn4st = $user_org;
                     }
 
-                    //$fce->I_BUKRS=$orgIn4st;//$user_org; 
-                    $fce->I_LIFNR=$vendor; 
-                    $fce->I_BUDAT=$fromat2; 
+                    //$fce->I_BUKRS=$orgIn4st;//$user_org;
+                    $fce->I_LIFNR=$vendor;
+                    $fce->I_BUDAT=$fromat2;
                     $fce->I_XBLNR=$kepalapjak.$no_pajak_vendor_cek;
 
                     $fce->Call();
                     if ($fce->GetStatus() == SAPRFC_OK ) {
-                    $fce->T_DATA->Reset();   
+                    $fce->T_DATA->Reset();
                     $q = 0;
                     unset($arrayu);
                     $arrayu=array();
                     $FPNUMH='';$FPNUML='';
                     while ( $fce->T_DATA->Next() ){
-                            //filter data    
+                            //filter data
                             $arrayu[]=$fce->T_DATA->row;
                             $FPNUML=$fce->T_DATA->row['FPNUML'];
                             $FPNUMH=$fce->T_DATA->row['FPNUMH'];
@@ -302,34 +292,34 @@ if(isset($_POST['cari'])){
 
                     }else{
                             $fce->PrintStatus();
-                            $fce->Close();	
+                            $fce->Close();
                             $sap->Close();
                     }
 
                     if($tipeerr=='S'){
                        // echo $show_ket =$FPNUML." | ".$FPNUMH." Ketemu";
-                        
+
 //                               echo "<pre>";
 //                               print_r($_POST);
 //                               echo "</pre>";
-                            
-                       unset($totjumlah);unset($persenTot);        
+
+                       unset($totjumlah);unset($persenTot);
                        foreach ($_POST as $key => $value) {
                            foreach ($_POST as $idkey => $idvalue) {
-                               if(substr($idkey,0,4)=='idke'){    
+                               if(substr($idkey,0,4)=='idke'){
                                    if($key=='jumlah'.$idvalue){
                                        $totjumlah +=$value;
                                    }
-                               }    
+                               }
                            }
-                       }        
-                       //echo "Total ".$totjumlah; 
+                       }
+                       //echo "Total ".$totjumlah;
                        $persenTot=@(($totjumlah*10)/100);
                        $totplusppn=$totjumlah+$persenTot;
                        $toleransiP=10000000;//10000000
-                       
+
                        if($totplusppn >= $toleransiP){
-                           if(($orgIn4st == '7000' || $orgIn4st == '5000') && $cektahun>2016){ //perubahan pajak KSO tiket 26432
+                           if(($orgIn4st == '7000' && $cektahun==2017) || $orgIn4st == '5000'){ //perubahan pajak KSO tiket 26432
                                if($kepalapjak=='010'){
                                     //exit;
                                     $user_name_cek_id=$_SESSION['user_name'];
@@ -378,17 +368,17 @@ if(isset($_POST['cari'])){
                 if($user_name_cek_id != ""){
                      $action=$_POST['action'];
                      include ('formula.php');
-                }               
+                }
             }
-            
+
 
         }else{
             $show_ket ="Silahkan Isi Tanggal Pajak dan No Pajak Expeditur !!!";
         }
-        
+
         $total=0;
 }
- 
+
 ?>
 <script language=javascript>
 <!-- Edit the message as your wish -->
@@ -396,10 +386,10 @@ if(isset($_POST['cari'])){
 var message="You dont have permission to right click";
 
 function clickIE()
- 
+
 {if (document.all)
 {(message);return false;}}
- 
+
 function clickNS(e) {
 if
 (document.layers||(document.getElementById&&!document.all))
@@ -409,7 +399,7 @@ if (document.layers)
 {document.captureEvents(Event.MOUSEDOWN);document.  onmousedown=clickNS;}
 else
 {document.onmouseup=clickNS;document.oncontextmenu  =clickIE;}
- 
+
 document.oncontextmenu=new Function("return false")
 
 </script>
@@ -421,13 +411,13 @@ document.oncontextmenu=new Function("return false")
 <script language="JavaScript" src="../include/calendar/JSCookMenu_mini.js" type="text/javascript"></script>
 <!-- import the calendar script -->
 <script type="text/javascript" src="../include/calendar/calendar_mini.js"></script>
-<!-- import the language module --> 
+<!-- import the language module -->
 <script type="text/javascript" src="../include/calendar/lang/calendar-en.js"></script>
 <script language="JavaScript" type="text/javascript" src="../include/scrollabletable.js"></script>
 <link href="../include/calendar/calendar-mos.css" rel="stylesheet" type="text/css">
 <link href="../Templates/css/template_css.css" rel="stylesheet" type="text/css" />
 <link href="../Templates/css/admin_login.css" rel="stylesheet" type="text/css" />
-<link href="../Templates/css/theme.css" rel="stylesheet" type="text/css" /> 
+<link href="../Templates/css/theme.css" rel="stylesheet" type="text/css" />
 
 
 <link rel="stylesheet" href="../include/bootstrap/css/bootstrap.min.css">
@@ -448,7 +438,7 @@ function checkedAll (frm1) {
           checked = false
 		  unMarkAllRows('fsimpan')
           }
-/*	for (var i =0; i < aa.elements.length; i++) 
+/*	for (var i =0; i < aa.elements.length; i++)
 	{
 	 aa.elements[i].checked = checked;
 
@@ -457,20 +447,20 @@ function checkedAll (frm1) {
 
 function cek_org(id_cek) {
     var obj = document.getElementById(id_cek);
-    var cek = obj.value;   
+    var cek = obj.value;
     var satu_data = "0";
     for (var keb = 0; keb < cek; keb++){
         var rowke = 'idke'+keb;
         var com_rowke = document.getElementById(rowke);
         if (com_rowke.checked == true)  {
-            satu_data = "1";  		
+            satu_data = "1";
         }
     }
     var cekdata = 0; var kec1; var kec2;
     for (var keb1 = 0; keb1 < cek; keb1++){
         kec1 = keb1 ;
         for (var keb2 = 0; keb2 < cek; keb2++){
-            kec2 = keb2;	
+            kec2 = keb2;
             var rowke = 'idke'+kec1;
             var com_rowke = document.getElementById(rowke);
 
@@ -483,14 +473,14 @@ function cek_org(id_cek) {
             var rowke2 = 'orgke'+kec2;
             var com_roworg2 = document.getElementById(rowke2);
 
-            if (com_rowke.checked == true && com_rowke2.checked == true)  { 
+            if (com_rowke.checked == true && com_rowke2.checked == true)  {
 
                  if (com_roworg1.value != com_roworg2.value ) {
                         cekdata++;
 
                 }
             }
-        }     
+        }
     }
 
     if (parseInt(cekdata) > 0) {
@@ -542,7 +532,7 @@ function unMarkAllRows( container_id ) {
     return true;
 }
 
-</script> 
+</script>
 
 <style type="text/css">
 body	{background:#fff;}
@@ -557,7 +547,7 @@ tr.selected		{background:orange;color:#fff;}
 <script type="text/javascript">
 
 function IsNumeric(obj,panjang)
-   //  check for valid numeric strings	
+   //  check for valid numeric strings
    {
    var strValidChars = "0123456789";
    var strChar;
@@ -578,7 +568,7 @@ function IsNumeric(obj,panjang)
 			 return false;
 			 }
 		  }
-	 } 
+	 }
    }
 
 
@@ -716,7 +706,7 @@ function lockRowUsingCheckbox() {
 }
 addLoadEvent(lockRowUsingCheckbox);
 
-function findplant(org) {	
+function findplant(org) {
 		var com_org = document.getElementById('org');
 		var strURL="cari_plant.php?org="+com_org.value;
 		popUp(strURL);
@@ -724,7 +714,7 @@ function findplant(org) {
 function ketik_plant(obj) {
 	var com=document.getElementById('org');
 	var nilai_tujuan =obj.value;
-	var cplan=document.getElementById('nama_plant');						
+	var cplan=document.getElementById('nama_plant');
 	cplan.value = "";
 	var strURL="ketik_plant.php?org="+com.value+"&plant="+nilai_tujuan;
 	var req = getXMLHTTP();
@@ -732,13 +722,13 @@ function ketik_plant(obj) {
 		req.onreadystatechange = function() {
 			if (req.readyState == 4) {
 				// only if "OK"
-				if (req.status == 200) {						
-					document.getElementById('plantdiv').innerHTML=req.responseText;						
+				if (req.status == 200) {
+					document.getElementById('plantdiv').innerHTML=req.responseText;
 				} else {
 					alert("There was a problem while using XMLHTTP:\n" + req.statusText);
 				}
-			}				
-		}			
+			}
+		}
 		req.open("GET", strURL, true);
 		req.send(null);
 	}
@@ -752,11 +742,11 @@ function kodepajak(val){
         return false;
     }else{
 	return true;
-    }   
-    
+    }
+
 }
 
-function find_rek() {	
+function find_rek() {
     var no_vendor = document.getElementById("no_vendor");
     var strURL="cari_rek.php?no_vendor="+no_vendor.value;
     popUp(strURL);
@@ -769,7 +759,7 @@ function find_rek() {
 <script type="text/javascript" language="JavaScript">
 	//ini ni yang buat div tapi kita hidden... ocre....
 	document.write('<div id="tunggu_ya" style="display:none" ><table width="100%" height="95%" align="center" valign="middle"><tr><td width="100%" height="100%" align="center" valign="middle"><h3>Loading Data....<br><br><div align="center"><img src="../images/loading.gif"></img></div></h3></td></tr></table></div>');
-	
+
 	</script>
 <div id="halaman_tampil" style="display:inline">
 
@@ -816,7 +806,7 @@ function find_rek() {
       </select> <input type="text" id="tahun" name="tahun"  value="<?=$tahun?>" maxlength="4" size="10"/>
       *</td>
     </tr>
-	
+
     <tr>
       <td  class="puso">Warna Plat </td>
       <td  class="puso">:</td>
@@ -826,12 +816,12 @@ function find_rek() {
 		   document.getElementById('HITAM').style.display = "none";
 		   document.getElementById(show).style.display = "block";
 		}
-	  </script>	  
+	  </script>
 	  <select name="warna_plat" id="warna_plat">
           <option value=""onClick="display_div('');">---Pilih---</option>
           <? $fungsi->ex_warna_plat($warna_plat);?>
         </select> -->
-        
+
 		<script type="text/javascript">
           function display_div(show){
           document.getElementById('HITAM').style.display = "none";
@@ -851,7 +841,7 @@ function find_rek() {
 	<td  class="puso">Termin Invoice </td>
     <td  class="puso">:</td>
 	<td>
-	        <div id="HITAM" style="display:none;"> 
+	        <div id="HITAM" style="display:none;">
 			<select name="termin" id="termin">
             <option value="">---Pilih---</option>
 		    <option value="1">Termin 1</option>
@@ -938,10 +928,10 @@ $filhpajak="javascript:kodepajak(pjk1);";
       <td width="1%"  class="puso">:</td>
       <td width="86%" ><input name="tanggal_pjk" type="text" id="tanggal_pjk" <?=$hanyabaca?> value="<?=$tanggal_pjk?>" />
           <input name="btn_pjk" type="button" class="button" onClick="return showCalendar('tanggal_pjk');" value="..." />
-	  
+
 	  </td>
     </tr>
-            
+
     <tr>
       <input name="no_vendor" id="no_vendor" type="hidden" value="<?=$no_vendor_v;?>" />
       <td  class="puso">No Rekening </td>
@@ -957,15 +947,15 @@ $filhpajak="javascript:kodepajak(pjk1);";
     </td>
     </tr>
 	</table>
-	
-	</div> 
+
+	</div>
 	<div align="center">
 	<table width="95%" align="center" class="adminlist">
 	<tr>
 	<th align="left" colspan="4"><span class="style5">&nbsp;Tabel Data Invoice Claim </span></th>
 	</tr>
 	</table>
-	</div> 
+	</div>
 	<div align="center">
 	<table id="myScrollTable" width="95%" align="center" class="pickme">
 	<thead >
@@ -995,7 +985,7 @@ $filhpajak="javascript:kodepajak(pjk1);";
 		$urutke="urutke".$i;
                 $orgCom="orgke".$i;
                 $org_fpajakkk=$com[$i];
-		?>  
+		?>
 		<tr>
 		<td align="center"><input name="<?=$idke;?>" id="<?=$idke;?>" type="checkbox" value="<?=$appke;?>" /> <? echo $b; ?></td>
                 <td align="center"><? echo $com[$i]; ?><input name="<?=$orgCom;?>" id="<?=$orgCom;?>" type="hidden" value="<?=$com[$i];?>" /></td>
@@ -1058,15 +1048,15 @@ var t = new ScrollableTable(document.getElementById('myScrollTable'), 300);
 <? } ?>
 </p>
 </div>
-    
-<?if($show_ket!=''){?> 
+
+<?if($show_ket!=''){?>
 <div align="center" class="login">
 <?
 echo $show_ket;
-?>  
-</div>    
-<?}?>        
-    
+?>
+</div>
+<?}?>
+
 <? //include ('../include/ekor.php'); ?>
 	<script language=javascript>
 	//We write the table and the div to hide the content out, so older browsers won't see it
